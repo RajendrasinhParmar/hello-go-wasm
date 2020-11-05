@@ -21,16 +21,37 @@ func prettyJSON(input string) (string, error) {
 func jsonWrapper() js.Func {
 	jsonFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
-			return "Invalid no of arguments passed"
+			result := map[string]interface{}{
+				"error": "Invalid no of arguments passed",
+			}
+			return result
+		}
+		jsDoc := js.Global().Get("document")
+		if !jsDoc.Truthy() {
+			result := map[string]interface{}{
+				"error": "Unable to get document object",
+			}
+			return result
+		}
+		jsonOutputTextArea := jsDoc.Call("getElementById", "jsonoutput")
+		if !jsonOutputTextArea.Truthy() {
+			result := map[string]interface{}{
+				"error": "Unable to get output text area",
+			}
+			return result
 		}
 		inputJSON := args[0].String()
 		fmt.Printf("input %s\n", inputJSON)
 		pretty, err := prettyJSON(inputJSON)
 		if err != nil {
-			fmt.Printf("Unable to convert to json %s\n", err)
-			return err.Error()
+			errStr := fmt.Sprintf("Unable to parse JSON. Error %s occurred\n", err)
+			result := map[string]interface{}{
+				"error": errStr,
+			}
+			return result
 		}
-		return pretty
+		jsonOutputTextArea.Set("value", pretty)
+		return nil
 	})
 	return jsonFunc
 }
